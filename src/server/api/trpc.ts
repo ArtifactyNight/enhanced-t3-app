@@ -7,7 +7,7 @@
  * need to use are documented accordingly near the end.
  */
 import { initTRPC, TRPCError } from "@trpc/server";
-import superjson from "superjson";
+import transformer from "trpc-transformer";
 import { ZodError } from "zod";
 
 import { db } from "@/server/db";
@@ -27,7 +27,7 @@ import { auth } from "@/server/auth";
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth.api.getSession({
-    headers: opts.headers
+    headers: opts.headers,
   });
   return {
     db,
@@ -43,7 +43,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
  * errors on the backend.
  */
 const t = initTRPC.context<typeof createTRPCContext>().create({
-  transformer: superjson,
+  transformer,
   errorFormatter({ shape, error }) {
     return {
       ...shape,
@@ -113,8 +113,8 @@ export const protectedProcedure = t.procedure
   .use(({ ctx, next }) => {
     if (!ctx.session?.user) {
       console.log({
-        session: ctx.session
-      })
+        session: ctx.session,
+      });
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
     return next({
